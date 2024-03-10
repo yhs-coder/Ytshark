@@ -2,7 +2,7 @@
 #include <pcap/pcap.h>
 #include <stdlib.h>
 #include <string.h>
-
+//#include "dpi_pkt_main.c"
 
 dpi_result* dpi_init(const char* pcapfile)
 {
@@ -61,14 +61,14 @@ void dpi_pcap_callback(u_char *user, const struct pcap_pkthdr *h, const u_char *
 
     // 解析ip报文
     pkt.ip_len = pkt.ether_len - sizeof(*pkt.ether_packet);
-    pkt.ip_packet = (char*)pkt.ether_packet + sizeof(*pkt.ether_packet);    // 计算ip报文的起始位置地址
+    pkt.ip_packet = (struct iphdr*)pkt.ether_packet + sizeof(*pkt.ether_packet);    // 计算ip报文的起始位置地址
 
     // 判断以太网帧之上是否为ip报文
     if (pkt.ether_packet->ether_type == htons(0x0800)) {
         // 调用解析ip报文的函数
         dpi_pkt_ip(res, &pkt);
     }
-    
+}    
 
 void dpi_loop(dpi_result* res)
 {
