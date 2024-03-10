@@ -2,9 +2,11 @@
 #include <net/ethernet.h>
 #include <arpa/inet.h>
 #include <stdint.h>
-
+#include <netinet/ip.h>
 
 // 句柄定义
+// 操作数据包的句柄
+// 保存数据包中每个协议的报文数量
 typedef struct dpi_result {
     void* pcap_handle;          // 存储pcap_t类型句柄
     unsigned int ether_count;   // 以太网报文数量
@@ -16,16 +18,19 @@ typedef struct dpi_result {
 
 
 // 定义报文的解析信息
+// 即每个协议报文长度，以及起始地址
 typedef struct dpi_pkt {
     uint32_t ether_len;                 // 以太网报文长度
     struct ether_header* ether_packet;  // 以太网报文的地址
     uint32_t ip_len;                    // ip报文长度
-    char* ip_packet;                    // ip报文的地址  
+    struct iphdr* ip_packet;                    // ip报文的地址  
     uint32_t tcp_len;                   // tcp报文长度
     char* tcp_packet;                   // tcp报文的地址 
     uint32_t udp_len;                   // udp报文长度
     char* udp_packet;                   // udp报文的地址    
 }dpi_pkt;
+
+
 
 
 // 初始化
