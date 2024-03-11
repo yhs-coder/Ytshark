@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
+net/ethernet.h
+-
+arpa/inet.h
+-
+stdint.h
+-
+netinet/ip.h
+-
+netinet/tcp.h
+-
+
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi_pkt_main.c
+dpi.h
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
+stdio.h
+-
+unistd.h
+-
+

@@ -2,6 +2,7 @@
 #include <pcap/pcap.h>
 #include <stdlib.h>
 #include <string.h>
+
 //#include "dpi_pkt_main.c"
 
 dpi_result* dpi_init(const char* pcapfile)
@@ -11,12 +12,14 @@ dpi_result* dpi_init(const char* pcapfile)
     pcap_t* handle = pcap_open_offline(pcapfile, errbuf); // 读取pcap文件
     if (!handle) {
         // 出错处理
-        fprintf(stderr, "Error in pacp_open_offline：%s\n",errbuf);
+        //fprintf(stderr, "Error in pacp_open_offline：%s\n",errbuf);
+        DPI_LOG_DEBUG("Error in pacp_open_offline：%s\n",errbuf);
         return NULL;
     }
     dpi_result* res = (dpi_result*)malloc(sizeof(dpi_result));
     if (res == NULL) {
-        printf("Error in malloc\n");
+        //printf("Error in malloc\n");
+        DPI_LOG_DEBUG("Error in malloc\n");
         return NULL;
     }
     memset(res, 0, sizeof(*res));
@@ -39,10 +42,11 @@ void dpi_pcap_callback(u_char *user, const struct pcap_pkthdr *h, const u_char *
     // 从packet header中输出每个报文的长度
     // caplen是实际捕获到的数据包长度
     // len是实际数据包的长度
-    printf("caplen:%d  len:%d\n", h->caplen, h->len);
+    //printf("caplen:%d  len:%d\n", h->caplen, h->len);
     // 如果caplen！= len，说明数据包丢失，该报文可以丢弃掉
     if (h->caplen != h->len) {
-        printf("该报文数据包丢失...\n");
+        //printf("该报文数据包丢失...\n");
+        DPI_LOG_DEBUG("该报文数据包丢失...\n");
         return;
     }
 
@@ -61,7 +65,7 @@ void dpi_pcap_callback(u_char *user, const struct pcap_pkthdr *h, const u_char *
 
     // 解析ip报文
     pkt.ip_len = pkt.ether_len - sizeof(*pkt.ether_packet);
-    pkt.ip_packet = (struct iphdr*)pkt.ether_packet + sizeof(*pkt.ether_packet);    // 计算ip报文的起始位置地址
+    pkt.ip_packet = (struct iphdr*)((char*)pkt.ether_packet + sizeof(*pkt.ether_packet));    // 计算ip报文的起始位置地址
 
     // 判断以太网帧之上是否为ip报文
     if (pkt.ether_packet->ether_type == htons(0x0800)) {
@@ -87,7 +91,7 @@ void dpi_destroy(dpi_result* res)
         return;
     }
     // 释放pcap_t句柄
-    pcap_close(res->pcap_handle);
+    pcap_close((pcap_t*)res->pcap_handle);
     // 释放动态空间
     free(res);
 }

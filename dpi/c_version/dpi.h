@@ -3,7 +3,18 @@
 #include <arpa/inet.h>
 #include <stdint.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 
+// 日志调试模块
+
+// ...表示宏可以接收可变数量的参数
+// do{...}while(0)是常见的宏定义技巧，用于创建一个代码块
+// 即使在宏扩展时只有单个语句也不会产生副作用
+// __VA_ARGS__ 是一个宏参数，它在宏定义中用来表示所有传递给宏的参数
+#define DPI_LOG_DEBUG(...) do {fprintf(stderr, __VA_ARGS__);}while(0)
+// #undef DPI_LOG_DEBUG 取消宏定义
+#define DPI_LOG_INFO(...) do {fprintf(stderr, __VA_ARGS__);}while(0)
+#define DPI_LOG_ERROR(...) do {fprintf(stderr, __VA_ARGS__);}while(0)
 // 句柄定义
 // 操作数据包的句柄
 // 保存数据包中每个协议的报文数量
@@ -14,6 +25,7 @@ typedef struct dpi_result {
     unsigned int tcp_count;     // tcp报文数量
     unsigned int udp_count;     // udp报文数量
     unsigned int ssh_count;     // ssh报文数量
+    unsigned int error_count;
 }dpi_result;
 
 
@@ -23,11 +35,20 @@ typedef struct dpi_pkt {
     uint32_t ether_len;                 // 以太网报文长度
     struct ether_header* ether_packet;  // 以太网报文的地址
     uint32_t ip_len;                    // ip报文长度
-    struct iphdr* ip_packet;                    // ip报文的地址  
-    uint32_t tcp_len;                   // tcp报文长度
-    char* tcp_packet;                   // tcp报文的地址 
-    uint32_t udp_len;                   // udp报文长度
-    char* udp_packet;                   // udp报文的地址    
+    struct iphdr* ip_packet;            // ip报文的地址  
+    union {
+        struct {
+            uint32_t tcp_len;            // tcp报文长度
+            struct tcphdr* tcp_packet;   // tcp报文的起始地址 
+        };
+        struct {
+            uint32_t udp_len;            // udp报文长度
+            char* udp_packet;   // udp报文的起始地址 
+
+        };
+    };
+    uint32_t payload_len;               // 数据区域的长度
+    uint8_t* payload;                   // 指向数据区域的指针
 }dpi_pkt;
 
 

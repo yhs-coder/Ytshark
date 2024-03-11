@@ -1,0 +1,1 @@
+/opt/rh/devtoolset-7/root/usr/bin/cc      CMakeFiles/dpi.dir/main.c.o CMakeFiles/dpi.dir/dpi.c.o CMakeFiles/dpi.dir/dpi_pkt_main.c.o  -o dpi -rdynamic -lpcap 
