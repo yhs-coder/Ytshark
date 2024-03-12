@@ -186,6 +186,30 @@ main.c.s:
 	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/main.c.s
 .PHONY : main.c.s
 
+protocol/dpi_ssh.o: protocol/dpi_ssh.c.o
+.PHONY : protocol/dpi_ssh.o
+
+# target to build an object file
+protocol/dpi_ssh.c.o:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o
+.PHONY : protocol/dpi_ssh.c.o
+
+protocol/dpi_ssh.i: protocol/dpi_ssh.c.i
+.PHONY : protocol/dpi_ssh.i
+
+# target to preprocess a source file
+protocol/dpi_ssh.c.i:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_ssh.c.i
+.PHONY : protocol/dpi_ssh.c.i
+
+protocol/dpi_ssh.s: protocol/dpi_ssh.c.s
+.PHONY : protocol/dpi_ssh.s
+
+# target to generate assembly for a file
+protocol/dpi_ssh.c.s:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_ssh.c.s
+.PHONY : protocol/dpi_ssh.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -204,6 +228,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... protocol/dpi_ssh.o"
+	@echo "... protocol/dpi_ssh.i"
+	@echo "... protocol/dpi_ssh.s"
 .PHONY : help
 
 

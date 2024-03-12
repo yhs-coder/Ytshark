@@ -9,13 +9,13 @@ void usage(const char* argv)
 
 void display_result(dpi_result* res)
 {
-    printf("error_count: %u\n",res->error_count);
     printf("================================================\n");
     printf("以太网报文数量: %u\n",res->ether_count);
     printf("ip报文数量: %u\n",res->ip_count);
     printf("tcp报文数量: %u\n",res->tcp_count);
     printf("udp报文数量: %u\n",res->udp_count);
-    printf("ssh报文数量: %u\n",res->ssh_count);
+    printf("ssh报文数量: %u\n",res->tcp_payload_count[SSH]);
+    printf("================================================\n");
 }
 
 

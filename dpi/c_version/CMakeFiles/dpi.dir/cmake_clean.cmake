@@ -1,7 +1,8 @@
 FILE(REMOVE_RECURSE
-  "CMakeFiles/dpi.dir/main.c.o"
   "CMakeFiles/dpi.dir/dpi.c.o"
+  "CMakeFiles/dpi.dir/main.c.o"
   "CMakeFiles/dpi.dir/dpi_pkt_main.c.o"
+  "CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"
   "dpi.pdb"
   "dpi"
 )

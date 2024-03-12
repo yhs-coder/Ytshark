@@ -5,6 +5,8 @@
 
 //#include "dpi_pkt_main.c"
 
+void dpi_pkt_ip(dpi_result* res, dpi_pkt* pkt); 
+
 dpi_result* dpi_init(const char* pcapfile)
 {
     // 1. 打开pcap文件

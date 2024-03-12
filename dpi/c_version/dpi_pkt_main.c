@@ -1,9 +1,18 @@
 #include "dpi.h"
 #include <stdio.h>
 #include <unistd.h>
+
+// 声明ssh解析函数
+int dpi_ssh_analyze(dpi_pkt* pkt);
+
+// 初始化函数指针数组
+dpi_protocol_analyze_func_t  dpi_tcp_analyze_funcs[ProtocolTCPEnd] = 
+{
+    dpi_ssh_analyze
+};
+
+
 // 解析ip报文
-
-
 void dpi_pkt_tcp(dpi_result* res, dpi_pkt* pkt); 
 void dpi_pkt_udp(dpi_result* res, dpi_pkt* pkt);
 
@@ -17,7 +26,6 @@ void dpi_pkt_ip(dpi_result* res, dpi_pkt* pkt)
     {
         //fprintf(stderr,"IP version is not 4\n");
         DPI_LOG_DEBUG("IP version is not 4\n");
-        res->error_count++;
         return;
     }
     int ip_header_len = pkt->ip_packet->ihl << 2;   // 首部长度单位是4字节,  << 2相当于*4
@@ -68,6 +76,17 @@ void dpi_pkt_tcp(dpi_result* res, dpi_pkt* pkt)
     // 计算数据区域的长度
     pkt->payload_len = pkt->tcp_len - tcp_header_len; // 数据区域的长度 = tcp报文长度 - tcp首部长度
     pkt->payload = (uint8_t*)pkt->tcp_packet + tcp_header_len;
+
+    int i = 0;
+    for (; i < ProtocolTCPEnd; i++)
+    {
+        if (dpi_tcp_analyze_funcs[i](pkt))
+        {
+            // 匹配对应的协议
+            res->tcp_payload_count[i]++;
+            break;
+        }
+    }
 }
 
 // 解析udp报文

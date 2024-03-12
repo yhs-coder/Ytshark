@@ -10,3 +10,6 @@ CMakeFiles/dpi.dir/dpi_pkt_main.c.o
 CMakeFiles/dpi.dir/main.c.o
  /home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
  /home/yang/do_wireshark/TSD/dpi/c_version/main.c
+CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o
+ /home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_ssh.c
+ dpi.h

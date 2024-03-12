@@ -15,6 +15,14 @@
 // #undef DPI_LOG_DEBUG 取消宏定义
 #define DPI_LOG_INFO(...) do {fprintf(stderr, __VA_ARGS__);}while(0)
 #define DPI_LOG_ERROR(...) do {fprintf(stderr, __VA_ARGS__);}while(0)
+
+
+typedef enum dpi_protocol_tcp
+{
+    SSH,
+    ProtocolTCPEnd
+}dpi_protocol_tcp;
+
 // 句柄定义
 // 操作数据包的句柄
 // 保存数据包中每个协议的报文数量
@@ -24,8 +32,7 @@ typedef struct dpi_result {
     unsigned int ip_count;      // ip报文数量
     unsigned int tcp_count;     // tcp报文数量
     unsigned int udp_count;     // udp报文数量
-    unsigned int ssh_count;     // ssh报文数量
-    unsigned int error_count;
+    unsigned int tcp_payload_count[ProtocolTCPEnd];
 }dpi_result;
 
 
@@ -66,3 +73,10 @@ void dpi_loop(dpi_result* res);
 
 // 释放资源
 void dpi_destroy(dpi_result* res);
+
+
+// 定义一个函数指针，用来识别TCP上层报文协议
+typedef int (*dpi_protocol_analyze_func_t)(dpi_pkt* pkt);
+
+// 声明函数指针数组，用来存储TCP上层报文协议的解析函数
+extern dpi_protocol_analyze_func_t dpi_tcp_analyze_func[ProtocolTCPEnd];
