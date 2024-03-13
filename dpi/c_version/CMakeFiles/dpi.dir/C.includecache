@@ -6,16 +6,6 @@
 
 #IncludeRegexTransform: 
 
-/home/yang/do_wireshark/TSD/dpi/c_version/dpi.c
-dpi.h
-/home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
-pcap/pcap.h
--
-stdlib.h
--
-string.h
--
-
 /home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
 net/ethernet.h
 -
@@ -28,11 +18,11 @@ netinet/ip.h
 netinet/tcp.h
 -
 
-/home/yang/do_wireshark/TSD/dpi/c_version/dpi_pkt_main.c
-dpi.h
+/home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_ssh.c
+../dpi.h
 /home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
-stdio.h
+string.h
 -
-unistd.h
+stdio.h
 -
 
