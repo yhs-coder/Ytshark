@@ -17,12 +17,24 @@ netinet/ip.h
 -
 netinet/tcp.h
 -
+dpi_list.h
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.h
 
-/home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_ssh.c
-../dpi.h
-/home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
-string.h
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.h
+stdint.h
 -
 stdio.h
+-
+string.h
+-
+stdlib.h
+-
+
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi_pkt_main.c
+dpi.h
+/home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
+stdio.h
+-
+unistd.h
 -
 

@@ -5,6 +5,7 @@ SET(CMAKE_DEPENDS_LANGUAGES
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_C
   "/home/yang/do_wireshark/TSD/dpi/c_version/dpi.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/dpi.c.o"
+  "/home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/dpi_list.c.o"
   "/home/yang/do_wireshark/TSD/dpi/c_version/dpi_pkt_main.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/dpi_pkt_main.c.o"
   "/home/yang/do_wireshark/TSD/dpi/c_version/main.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/main.c.o"
   "/home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_ssh.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"

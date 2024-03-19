@@ -98,9 +98,32 @@ CMakeFiles/dpi.dir/main.c.o.provides: CMakeFiles/dpi.dir/main.c.o.requires
 
 CMakeFiles/dpi.dir/main.c.o.provides.build: CMakeFiles/dpi.dir/main.c.o
 
+CMakeFiles/dpi.dir/dpi_list.c.o: CMakeFiles/dpi.dir/flags.make
+CMakeFiles/dpi.dir/dpi_list.c.o: dpi_list.c
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles $(CMAKE_PROGRESS_3)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building C object CMakeFiles/dpi.dir/dpi_list.c.o"
+	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/dpi.dir/dpi_list.c.o   -c /home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.c
+
+CMakeFiles/dpi.dir/dpi_list.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dpi.dir/dpi_list.c.i"
+	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -E /home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.c > CMakeFiles/dpi.dir/dpi_list.c.i
+
+CMakeFiles/dpi.dir/dpi_list.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dpi.dir/dpi_list.c.s"
+	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -S /home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.c -o CMakeFiles/dpi.dir/dpi_list.c.s
+
+CMakeFiles/dpi.dir/dpi_list.c.o.requires:
+.PHONY : CMakeFiles/dpi.dir/dpi_list.c.o.requires
+
+CMakeFiles/dpi.dir/dpi_list.c.o.provides: CMakeFiles/dpi.dir/dpi_list.c.o.requires
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/dpi_list.c.o.provides.build
+.PHONY : CMakeFiles/dpi.dir/dpi_list.c.o.provides
+
+CMakeFiles/dpi.dir/dpi_list.c.o.provides.build: CMakeFiles/dpi.dir/dpi_list.c.o
+
 CMakeFiles/dpi.dir/dpi_pkt_main.c.o: CMakeFiles/dpi.dir/flags.make
 CMakeFiles/dpi.dir/dpi_pkt_main.c.o: dpi_pkt_main.c
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles $(CMAKE_PROGRESS_3)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles $(CMAKE_PROGRESS_4)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building C object CMakeFiles/dpi.dir/dpi_pkt_main.c.o"
 	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/dpi.dir/dpi_pkt_main.c.o   -c /home/yang/do_wireshark/TSD/dpi/c_version/dpi_pkt_main.c
 
@@ -123,7 +146,7 @@ CMakeFiles/dpi.dir/dpi_pkt_main.c.o.provides.build: CMakeFiles/dpi.dir/dpi_pkt_m
 
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o: CMakeFiles/dpi.dir/flags.make
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o: protocol/dpi_ssh.c
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles $(CMAKE_PROGRESS_4)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles $(CMAKE_PROGRESS_5)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building C object CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"
 	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o   -c /home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_ssh.c
 
@@ -148,6 +171,7 @@ CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o.provides.build: CMakeFiles/dpi.dir/proto
 dpi_OBJECTS = \
 "CMakeFiles/dpi.dir/dpi.c.o" \
 "CMakeFiles/dpi.dir/main.c.o" \
+"CMakeFiles/dpi.dir/dpi_list.c.o" \
 "CMakeFiles/dpi.dir/dpi_pkt_main.c.o" \
 "CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"
 
@@ -156,6 +180,7 @@ dpi_EXTERNAL_OBJECTS =
 
 dpi: CMakeFiles/dpi.dir/dpi.c.o
 dpi: CMakeFiles/dpi.dir/main.c.o
+dpi: CMakeFiles/dpi.dir/dpi_list.c.o
 dpi: CMakeFiles/dpi.dir/dpi_pkt_main.c.o
 dpi: CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o
 dpi: CMakeFiles/dpi.dir/build.make
@@ -169,6 +194,7 @@ CMakeFiles/dpi.dir/build: dpi
 
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/dpi.c.o.requires
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/main.c.o.requires
+CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/dpi_list.c.o.requires
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/dpi_pkt_main.c.o.requires
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o.requires
 .PHONY : CMakeFiles/dpi.dir/requires

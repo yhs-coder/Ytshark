@@ -138,6 +138,30 @@ dpi.c.s:
 	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/dpi.c.s
 .PHONY : dpi.c.s
 
+dpi_list.o: dpi_list.c.o
+.PHONY : dpi_list.o
+
+# target to build an object file
+dpi_list.c.o:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/dpi_list.c.o
+.PHONY : dpi_list.c.o
+
+dpi_list.i: dpi_list.c.i
+.PHONY : dpi_list.i
+
+# target to preprocess a source file
+dpi_list.c.i:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/dpi_list.c.i
+.PHONY : dpi_list.c.i
+
+dpi_list.s: dpi_list.c.s
+.PHONY : dpi_list.s
+
+# target to generate assembly for a file
+dpi_list.c.s:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/dpi_list.c.s
+.PHONY : dpi_list.c.s
+
 dpi_pkt_main.o: dpi_pkt_main.c.o
 .PHONY : dpi_pkt_main.o
 
@@ -222,6 +246,9 @@ help:
 	@echo "... dpi.o"
 	@echo "... dpi.i"
 	@echo "... dpi.s"
+	@echo "... dpi_list.o"
+	@echo "... dpi_list.i"
+	@echo "... dpi_list.s"
 	@echo "... dpi_pkt_main.o"
 	@echo "... dpi_pkt_main.i"
 	@echo "... dpi_pkt_main.s"

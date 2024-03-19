@@ -27,6 +27,8 @@ dpi_result* dpi_init(const char* pcapfile)
     memset(res, 0, sizeof(*res));
     // 将pcap打开文件产生的句柄存到res结构体中
     res->pcap_handle = handle;
+    res->tcp_connection_list = dpi_list_create();
+    // TODO:判错
     return res;
 }
 
@@ -92,6 +94,9 @@ void dpi_destroy(dpi_result* res)
     if (!res) {
         return;
     }
+    // 释放链表
+   dpi_list_destroy(res->tcp_connection_list);
+
     // 释放pcap_t句柄
     pcap_close((pcap_t*)res->pcap_handle);
     // 释放动态空间

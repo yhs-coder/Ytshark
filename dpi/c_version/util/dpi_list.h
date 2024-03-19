@@ -15,7 +15,7 @@ typedef struct dpi_list_node
 // 链表的定义
 typedef struct dpi_list
 {
-    //uint32_t size;              // 链表节点数
+    uint32_t size;              // 链表节点数
     dpi_list_node sentinal;    // 哨兵节点
 }dpi_list;
 
