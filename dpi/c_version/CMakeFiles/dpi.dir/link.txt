@@ -1,1 +1,1 @@
-/opt/rh/devtoolset-7/root/usr/bin/cc      CMakeFiles/dpi.dir/dpi.c.o CMakeFiles/dpi.dir/main.c.o CMakeFiles/dpi.dir/dpi_list.c.o CMakeFiles/dpi.dir/dpi_pkt_main.c.o CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o  -o dpi -rdynamic -lpcap 
+/opt/rh/devtoolset-7/root/usr/bin/cc      CMakeFiles/dpi.dir/dpi.c.o CMakeFiles/dpi.dir/main.c.o CMakeFiles/dpi.dir/dpi_list.c.o CMakeFiles/dpi.dir/dpi_pkt_main.c.o CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o  -o dpi -rdynamic -lpcap 

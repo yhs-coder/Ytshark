@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <netinet/udp.h>
 #include "dpi_list.h"
 
 // 日志调试模块
@@ -35,6 +36,12 @@ typedef enum dpi_protocol_tcp
     ProtocolTCPEnd
 } dpi_protocol_tcp;
 
+typedef enum dpi_protocol_udp
+{
+    NFTP,
+    ProtocolUDPEnd
+} dpi_protocol_udp;
+
 // tcp连接的信息
 typedef struct dpi_tcp_connection
 {
@@ -56,6 +63,7 @@ typedef struct dpi_result
     unsigned int tcp_count;                         // tcp报文数量
     unsigned int udp_count;                         // udp报文数量
     unsigned int tcp_payload_count[ProtocolTCPEnd]; // TCP上层应用层对应协议的报文数
+    unsigned int udp_payload_count[ProtocolUDPEnd]; // UDP上层应用层对应协议的报文数
     dpi_list *tcp_connection_list;                  // 存储tcp连接信息的链表
 } dpi_result;
 
@@ -76,8 +84,8 @@ typedef struct dpi_pkt
         };
         struct
         {
-            uint32_t udp_len; // udp报文长度
-            char *udp_packet; // udp报文的起始地址
+            uint32_t udp_len;          // udp报文长度
+            struct udphdr *udp_packet; // udp报文的起始地址
         };
     };
     uint32_t payload_len; // 数据区域的长度
@@ -102,3 +110,7 @@ typedef int (*dpi_protocol_analyze_func_t)(dpi_pkt *pkt);
 
 // 声明函数指针数组，用来存储TCP上层报文协议的解析函数
 extern dpi_protocol_analyze_func_t dpi_tcp_analyze_func[ProtocolTCPEnd];
+
+
+// 声明函数指针数组，用来存储TCP上层报文协议的解析函数
+extern dpi_protocol_analyze_func_t dpi_udp_analyze_func[ProtocolUDPEnd];

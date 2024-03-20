@@ -4,11 +4,17 @@
 
 // 声明ssh解析函数
 int dpi_ssh_analyze(dpi_pkt *pkt);
+int dpi_nftp_analyze(dpi_pkt *pkt);
 
 // 初始化函数指针数组
 dpi_protocol_analyze_func_t dpi_tcp_analyze_funcs[ProtocolTCPEnd] =
     {
         dpi_ssh_analyze};
+
+// 初始化函数指针数组
+dpi_protocol_analyze_func_t dpi_udp_analyze_funcs[ProtocolUDPEnd] =
+    {
+        dpi_nftp_analyze};
 
 // 解析ip报文
 void dpi_pkt_tcp(dpi_result *res, dpi_pkt *pkt);
@@ -57,7 +63,7 @@ void dpi_pkt_ip(dpi_result *res, dpi_pkt *pkt)
         // 如果数据区没有数据，跳过
         if (pkt->udp_len <= 0)
             return;
-        pkt->udp_packet = (char *)pkt->ip_packet + ip_header_len;
+        pkt->udp_packet = (struct udphdr *)((char *)pkt->ip_packet + ip_header_len);
         dpi_pkt_udp(res, pkt);
         break;
     default:
@@ -134,5 +140,22 @@ void dpi_pkt_tcp(dpi_result *res, dpi_pkt *pkt)
 // 解析udp报文
 void dpi_pkt_udp(dpi_result *res, dpi_pkt *pkt)
 {
+    // udp报文数量++
     res->udp_count++;
+    uint16_t udp_len = ntohs(pkt->udp_packet->len);
+
+    // 计算应用数据的起始位置以及长度
+    pkt->payload_len = udp_len - sizeof(struct udphdr);
+    pkt->payload = (char *)pkt->udp_packet + sizeof(struct udphdr);
+
+    // 遍历每个协议的分析函数
+    int i = 0;
+    for (; i < ProtocolUDPEnd; i++)
+    {
+        if (dpi_udp_analyze_funcs[i](pkt))
+        {
+            // 如果是某个协议的报文，对应的报文数量++
+            res->udp_payload_count[i]++;
+        }
+    }
 }

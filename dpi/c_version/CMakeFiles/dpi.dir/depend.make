@@ -16,6 +16,10 @@ CMakeFiles/dpi.dir/main.c.o: dpi.h
 CMakeFiles/dpi.dir/main.c.o: dpi_list.h
 CMakeFiles/dpi.dir/main.c.o: main.c
 
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o: dpi.h
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o: dpi_list.h
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o: protocol/dpi_nftp.c
+
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o: dpi.h
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o: dpi_list.h
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o: protocol/dpi_ssh.c

@@ -4,6 +4,7 @@ FILE(REMOVE_RECURSE
   "CMakeFiles/dpi.dir/dpi_list.c.o"
   "CMakeFiles/dpi.dir/dpi_pkt_main.c.o"
   "CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"
+  "CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o"
   "dpi.pdb"
   "dpi"
 )

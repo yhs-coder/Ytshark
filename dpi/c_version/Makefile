@@ -210,6 +210,30 @@ main.c.s:
 	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/main.c.s
 .PHONY : main.c.s
 
+protocol/dpi_nftp.o: protocol/dpi_nftp.c.o
+.PHONY : protocol/dpi_nftp.o
+
+# target to build an object file
+protocol/dpi_nftp.c.o:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o
+.PHONY : protocol/dpi_nftp.c.o
+
+protocol/dpi_nftp.i: protocol/dpi_nftp.c.i
+.PHONY : protocol/dpi_nftp.i
+
+# target to preprocess a source file
+protocol/dpi_nftp.c.i:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_nftp.c.i
+.PHONY : protocol/dpi_nftp.c.i
+
+protocol/dpi_nftp.s: protocol/dpi_nftp.c.s
+.PHONY : protocol/dpi_nftp.s
+
+# target to generate assembly for a file
+protocol/dpi_nftp.c.s:
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_nftp.c.s
+.PHONY : protocol/dpi_nftp.c.s
+
 protocol/dpi_ssh.o: protocol/dpi_ssh.c.o
 .PHONY : protocol/dpi_ssh.o
 
@@ -255,6 +279,9 @@ help:
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
+	@echo "... protocol/dpi_nftp.o"
+	@echo "... protocol/dpi_nftp.i"
+	@echo "... protocol/dpi_nftp.s"
 	@echo "... protocol/dpi_ssh.o"
 	@echo "... protocol/dpi_ssh.i"
 	@echo "... protocol/dpi_ssh.s"

@@ -167,13 +167,37 @@ CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o.provides: CMakeFiles/dpi.dir/protocol/dp
 
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o.provides.build: CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o
 
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o: CMakeFiles/dpi.dir/flags.make
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o: protocol/dpi_nftp.c
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles $(CMAKE_PROGRESS_6)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building C object CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o"
+	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -o CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o   -c /home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_nftp.c
+
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/dpi.dir/protocol/dpi_nftp.c.i"
+	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -E /home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_nftp.c > CMakeFiles/dpi.dir/protocol/dpi_nftp.c.i
+
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/dpi.dir/protocol/dpi_nftp.c.s"
+	/opt/rh/devtoolset-7/root/usr/bin/cc  $(C_DEFINES) $(C_FLAGS) -S /home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_nftp.c -o CMakeFiles/dpi.dir/protocol/dpi_nftp.c.s
+
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.requires:
+.PHONY : CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.requires
+
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.provides: CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.requires
+	$(MAKE) -f CMakeFiles/dpi.dir/build.make CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.provides.build
+.PHONY : CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.provides
+
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.provides.build: CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o
+
 # Object files for target dpi
 dpi_OBJECTS = \
 "CMakeFiles/dpi.dir/dpi.c.o" \
 "CMakeFiles/dpi.dir/main.c.o" \
 "CMakeFiles/dpi.dir/dpi_list.c.o" \
 "CMakeFiles/dpi.dir/dpi_pkt_main.c.o" \
-"CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"
+"CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o" \
+"CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o"
 
 # External object files for target dpi
 dpi_EXTERNAL_OBJECTS =
@@ -183,6 +207,7 @@ dpi: CMakeFiles/dpi.dir/main.c.o
 dpi: CMakeFiles/dpi.dir/dpi_list.c.o
 dpi: CMakeFiles/dpi.dir/dpi_pkt_main.c.o
 dpi: CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o
+dpi: CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o
 dpi: CMakeFiles/dpi.dir/build.make
 dpi: CMakeFiles/dpi.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --red --bold "Linking C executable dpi"
@@ -197,6 +222,7 @@ CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/main.c.o.requires
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/dpi_list.c.o.requires
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/dpi_pkt_main.c.o.requires
 CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o.requires
+CMakeFiles/dpi.dir/requires: CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o.requires
 .PHONY : CMakeFiles/dpi.dir/requires
 
 CMakeFiles/dpi.dir/clean:

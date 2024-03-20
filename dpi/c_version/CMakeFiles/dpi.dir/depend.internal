@@ -16,6 +16,10 @@ CMakeFiles/dpi.dir/main.c.o
  /home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
  /home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.h
  /home/yang/do_wireshark/TSD/dpi/c_version/main.c
+CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o
+ /home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
+ /home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.h
+ /home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_nftp.c
 CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o
  /home/yang/do_wireshark/TSD/dpi/c_version/dpi.h
  /home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.h

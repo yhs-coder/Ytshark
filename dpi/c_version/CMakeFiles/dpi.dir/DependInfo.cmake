@@ -8,6 +8,7 @@ SET(CMAKE_DEPENDS_CHECK_C
   "/home/yang/do_wireshark/TSD/dpi/c_version/dpi_list.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/dpi_list.c.o"
   "/home/yang/do_wireshark/TSD/dpi/c_version/dpi_pkt_main.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/dpi_pkt_main.c.o"
   "/home/yang/do_wireshark/TSD/dpi/c_version/main.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/main.c.o"
+  "/home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_nftp.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/protocol/dpi_nftp.c.o"
   "/home/yang/do_wireshark/TSD/dpi/c_version/protocol/dpi_ssh.c" "/home/yang/do_wireshark/TSD/dpi/c_version/CMakeFiles/dpi.dir/protocol/dpi_ssh.c.o"
   )
 SET(CMAKE_C_COMPILER_ID "GNU")
