@@ -26,17 +26,18 @@ int main()
     }
 
     error_code = pcap_file.parse();
-    if (error_code != PCAP_PARSE_SUCCESS)
+    if (error_code != PARSE_SUCCESS)
     {
         printf("parse pcap file error: %d\n",error_code);
         return -1;
     }
-    pcap_file._file_header.pcap_header_info();
+    // 打印出pcap头文件的内容
+    pcap_file._file_header.debug_info();
     printf("packet amout = %d\n",(int)pcap_file._packets.size());
     // 遍历vector
     for (auto value : pcap_file._packets)
     {
-        value.header.pcap_packet_header_info();
+        value.debug_info();
     }
     return 0;
 }
