@@ -3,8 +3,17 @@
 
 #include "base.h"
 
-#define PARSE_SUCCESS                           0       // 解析完成       
+#define IP_GETTER_RIRST(value)                  ((value) >> 24)
+#define IP_GETTER_SECOND(value)                 (((value) & 0x00FF0000) >> 16)
+#define IP_GETTER_THIRD(value)                  (((value) & 0x0000FF00) >> 8)
+#define IP_GETTER_FOURTH(value)                 ((value) & 0x000000FF)
 
+/* 传输层协议类型  */
+#define TRANSPORT_LAYER_PROTOCOL_ICMP           1
+#define TRANSPORT_LAYER_PROTOCOL_TCP            6
+#define TRANSPORT_LAYER_PROTOCOL_UDP            17
+
+#define PARSE_SUCCESS                           0       // 解析完成       
 /* 解析pcap文件错误码 */ 
 #define PCAP_PARSE_ERROR_LOAD_FILE              -1      // 加载pcap文件出错
 #define PCAP_PARSE_ERROR_MAP_GET_BUFFER         -2      // 获取映射内存的文件内容出错
@@ -17,6 +26,11 @@
 #define ETHERNET_PARSE_ERROR_MIN_LENGTH         -101    // 以太网数据包不完整
 #define ETHERNET_PARSE_ERROR_PROTOCOL_TYPE      -102    // 以太网数据包协议类型错误 
 
+/* 解析IP数据包错误码  */
+#define IP_PARSE_ERROR_HEADER_MIN_LENGTH        -151    // IP数据包头不完整
+#define IP_PARSE_ERROR_PROTOCOL_TYPE            -152    // IP数据包协议类型错误
+#define IP_PARSE_ERROR_VERSION                  -153    // IP数据包版本类型错误
+#define IP_PARSE_ERROR_LENGTH                   -154    // IP数据包不完整
 
 /*
 #define PCAP_PARSE_ERROR_PACKET_DATA    -22     // 获取pcap数据包内容出错
@@ -36,8 +50,8 @@ public:
         : _is_opposite_byte(is_opposite)
         , _size(0)
     {}
-
-    // 提供接口
+    virtual ~Protocol();
+    // 提供统一接口
     
     // 检查缓冲区长度
     virtual bool check_buffer_length(void *buffer, uint32_t size) = 0;
@@ -48,5 +62,10 @@ public:
     // 调试信息
     virtual int debug_info() = 0;
 };
+
+// 获取字节序模式
+int get_endian();
+const char *get_network_layer_protocol_name(uint32_t type);
+const char *get_transport_layer_protocol_name(uint32_t type);
 
 #endif /* __PROTOCOL_H__ */
