@@ -133,7 +133,7 @@ int PcapPacketHeader::debug_info()
 
 PcapPacket::PcapPacket(bool is_opposite_byte) 
     : header(is_opposite_byte)
-    , ethernet(is_opposite_byte)
+    , ethernet()
 {}
 
 int PcapPacket::debug_info()
@@ -202,7 +202,6 @@ int PcapFile::parse()
         return PCAP_PARSE_ERROR_MAP_GET_BUFFER;
     error_code = _file_header.parse(pcap_header_start, PCAP_HEADER_BYTES);
     JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
-    
     // 遍历pcap文件，循环解析数据包
     for (offset = PCAP_HEADER_BYTES; offset < _map_file._file_size;)
     {
@@ -233,9 +232,7 @@ int PcapFile::parse()
         offset += packet.header._caplen;
         // 将数据包(即数据包头和数据)的信息插入vector中，后面遍历输出
         _packets.push_back(packet); 
-        
     }
-    
     return (offset == _map_file._file_size ? PARSE_SUCCESS : PCAP_PARSE_ERROR_PACKET_HEADER_LENGTH);
 }
 
