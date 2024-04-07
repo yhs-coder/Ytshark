@@ -38,15 +38,18 @@ void DnsAreaPublic::reset()
  * 解析dns查询名，查询类型、查询类
  * @param dns_start -- dns报文起始
  * @param dns_size  -- dns报文总长度
- * @param offset    -- 在dns报文中的偏移
+ * @param offset    -- 查询/回答区域在dns报文中的偏移
+ * @parse_data_type -- 解析数据类型
  * return ErrorCode
  * */
 int DnsAreaPublic::parse(void *dns_start, uint32_t dns_size, uint32_t offset, int parse_data_type)
 {
-    JUDGE_RETURN(dns_start == nullptr || offset >= dns_size, DNS_PARSE_DATA_TYPE_ARGS);
-    JUDGE_RETURN(!IS_VALID_DNS_PARSE_DATA_TYPE(parse_data_type), DNS_PARSE_ERROR_QUERY_TYPE_UNSPPORTED_DATA_TYPE);
-    // 判断字节序是否为小端
+    // 检查dns_start起始地址和偏移量是否超出dns大小
+    JUDGE_RETURN(dns_start == nullptr || offset >= dns_size, DNS_PARSE_ERROR_DATA_TYPE_ARGS);
+    JUDGE_RETURN(!IS_VALID_DNS_PARSE_DATA_TYPE(parse_data_type), DNS_PARSE_ERROR_UNSPPORTED_DATA_TYPE); 
+    // 判断主机字节序是否为小端
     bool is_opposite = get_endian() == LITTLE_ENDIAN;    
+    // 移动到查询/回答区域
     u_char *data = (u_char*)dns_start + offset;
     reset();
     _size = Dns::parse_dns_qname(dns_start, dns_size, offset, _name, parse_data_type);
@@ -148,21 +151,28 @@ void DnsResRecordArea::debug_info()
 }
 
 Dns::Dns() : Protocol(false)
-{
+{ 
     _is_opposite_byte = get_endian() == LITTLE_ENDIAN;
 }
 
 Dns::~Dns()
 {}
 
+/*
+ * 检查dns头部是够有效 
+ **/
 bool Dns::is_valid_dns_header()
 {
+    // 检查opcode字段
     JUDGE_RETURN(!IS_VALID_DNS_OPCODE(_op_code), false);
+    // 检查返回码
     return IS_VALID_DNS_REPLY_CODE(_reply_code);
 }
 
 /*
  * 解析dns数据区域
+ * @param - dns_start 报文起始地址
+ * @param - size报文总长度
  * @return ErrorCode
  * @remark 此函数待优化
  */
@@ -171,6 +181,7 @@ int Dns::parse_dns_data_area(void *dns_start, uint32_t size)
 {
     int error_code = PARSE_SUCCESS;
     uint32_t offset = DNS_HEADER_SIZE;
+    // 标准查询并且返回码为0无差错，就进行解析
     if (_op_code == DNS_OPCODE_STANDARD_QUERY && _reply_code == DNS_REPLY_CODE_SUCCESS)
     {
         // 解析查询区域
@@ -182,6 +193,7 @@ int Dns::parse_dns_data_area(void *dns_start, uint32_t size)
             offset += area_public._size;
             _questions.push_back(area_public);
         }
+
         DnsResRecordArea res_record_area;
         char str_ip[STR_IPV4_BUFFER_SIZE];
         for (int index = 0; index < _answer_amount; index++)
@@ -282,3 +294,87 @@ int Dns::debug_info()
     printf("\n");
 }
 
+/*
+ * 解析dns报文资源数据
+ * @param dns_start  -- dns报文起始
+ * @param dns_size   -- dms报文总长度
+ * @param offset     -- 查询名在dns报文中的偏移
+ * @return int       -- 实际存储用的字节长度
+ * */
+
+int Dns::parse_dns_qname(void *dns_start, uint32_t dns_size, uint32_t offset, Qname &data, int parse_data_type)
+{
+    bool is_opposite = get_endian() == LITTLE_ENDIAN;
+    if (parse_data_type == DNS_PARSE_DATA_TYPE_DOMAIN)
+    {
+        memset(data.domain, 0, DNS_DOMAIN_BUFFER_SIZE);
+        return Dns::parse_dns_domain(dns_start, dns_size, offset, data.domain);
+    }
+    else 
+    {
+        memcpy(&(data.ip), (u_char*)dns_start + offset, sizeof(data.ip));
+        is_opposite ? data.ip = ntohl(data.ip) : 0;
+        return sizeof(data.ip);
+    }
+}
+
+/*
+ * 解析dns报文查询名字段（域名）
+ * @param dns_start     -- dns报文起始
+ * @param dns_size      -- dns报文总长度
+ * @param offset        -- 查询名在dns报文中的偏移
+ * @param data          -- 存储查询名/域名的字符数组
+ * #return int          -- 实际存储用的字节长度
+ * */
+
+int Dns::parse_dns_domain(void *dns_start, uint32_t dns_size, uint32_t offset, uint8_t *data)
+{
+    JUDGE_RETURN(dns_start == nullptr || offset + DNS_QUERY_NAME_MIN_SIZE > dns_size, DNS_PARSE_ERROR_QUERY_NAME_ARGS);
+    // 指针移动到查询名/域名 的字段位置
+    u_char *per_cname = (u_char*)dns_start + offset;
+    u_char *ptr_copy = data;
+    uint16_t ptr_offset = 0;        // dns报文偏移
+    bool is_jump = false;           // 是否已经用过指针偏移
+    uint32_t per_size = 1;          // 用来表示当前域名部分的长度，初始值设为1， 
+    uint32_t real_size = 0;         // real_size 为数据的实际存储长度，指针跳转后不在计数
+    bool is_opposite = get_endian() == LITTLE_ENDIAN;
+
+    for (; per_size > 0; ptr_copy += per_size + 1, per_cname  += per_size)
+    {
+        /* 查看报文域名是否重复(是否有偏移指针)，指针跳转 */
+        if (IS_DNS_CNAME_OFFSET_PTR(*per_cname))
+        {
+            memcpy(&ptr_offset, per_cname, sizeof(ptr_offset));
+            is_opposite ? ptr_offset = ntohs(ptr_offset) : ptr_offset;
+            ptr_offset = DNS_CNAME_OFFSET_GETTER(ptr_offset);
+
+            JUDGE_RETURN(ptr_offset + DNS_QUERY_NAME_MIN_SIZE > dns_size, 0);
+            // per_cname 移动到第一次出现域名的地方
+            per_cname = (u_char*)dns_start + ptr_offset;
+            is_jump ? real_size : real_size += sizeof(ptr_offset);
+            is_jump = true;
+        }
+
+        /*
+            冷知识 ：DNS 报文中每个域名部分的开头都是一个表示长度的字节，表示当前部分域名（标号）的长度
+            per_size = *per_cname++; *per_cname拿到当前域名部分的长度，赋值给per_size;然后per_cname指针后移,指向下一个字节，即真正的域名
+        */
+        /* 单个域名拷贝 */
+        per_size = *per_cname++;
+        if (per_size > 0)
+        {
+            // 此时per_name指向域名，将per_size的长度拷贝给ptr_copy
+            memcpy(ptr_copy, per_cname, per_size);
+            // 在拷贝完部分域名后，加上一个点，表示域名部分的结束
+            *(ptr_copy + per_size) = '.';
+            // + 1表示是点号的长度
+            is_jump ? real_size : (real_size += per_size + 1);
+        }
+    }
+
+    real_size >= 2 ? ptr_copy -= 2 : ptr_copy;
+    *ptr_copy = '\0';
+    is_jump ? real_size : real_size += 1;       // 加上末尾的0x00
+    return real_size;
+
+}
