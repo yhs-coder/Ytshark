@@ -47,16 +47,18 @@ int DnsAreaPublic::parse(void *dns_start, uint32_t dns_size, uint32_t offset, in
     // 检查dns_start起始地址和偏移量是否超出dns大小
     JUDGE_RETURN(dns_start == nullptr || offset >= dns_size, DNS_PARSE_ERROR_DATA_TYPE_ARGS);
     JUDGE_RETURN(!IS_VALID_DNS_PARSE_DATA_TYPE(parse_data_type), DNS_PARSE_ERROR_UNSPPORTED_DATA_TYPE); 
-    // 判断主机字节序是否为小端
+    // 判断当前主机的字节序是否为小端
     bool is_opposite = get_endian() == LITTLE_ENDIAN;    
     // 移动到查询/回答区域
     u_char *data = (u_char*)dns_start + offset;
     reset();
+    // _size是实际存储域名、查询名的字节长度
+    // 调用parse_dns_qname,会解析查询名/域名，并将结果保存到_name
     _size = Dns::parse_dns_qname(dns_start, dns_size, offset, _name, parse_data_type);
-    JUDGE_RETURN(_size <= 0, DNS_PARSE_ERROR_PARSE_DOMAIN);
+    //JUDGE_RETURN(_size <= 0, DNS_PARSE_ERROR_PARSE_DOMAIN);
     _data_type = parse_data_type;
-
-    /* 查询类型和查询类  */
+    printf("域名的长度 size=%d\n", _size);
+    /* 解析查询类型和查询类  */
     data += _size;
     memcpy(&(_query_type), data, sizeof(_query_type));
     data += sizeof(_query_type);
@@ -70,7 +72,11 @@ int DnsAreaPublic::parse(void *dns_start, uint32_t dns_size, uint32_t offset, in
         _query_class = ntohs(_query_class);
     }
    JUDGE_RETURN(!IS_VALID_DNS_QUERY_TYPE(_query_type), DNS_PARSE_ERROR_QUERY_TYPE);
-   JUDGE_RETURN(!IS_VALID_DNS_QUERY_TYPE(_query_class), DNS_PARSE_ERROR_QUERY_CLASS);
+   printf("_query_class = %d\n", _query_class);
+   JUDGE_RETURN(!IS_VALID_DNS_QUERY_CLASS(_query_class), DNS_PARSE_ERROR_QUERY_CLASS);
+   //_size =  _size + sizeof(_query_type) + sizeof(_query_class) ; 
+   _size =  _size + 2 + sizeof(_query_type) + sizeof(_query_class); // +2表示域名一开始表示标号长度的一字节和结尾0的一字节 
+    printf("查询区域总长度 size=%d\n", _size);
    return PARSE_SUCCESS;
 }
 
@@ -113,10 +119,16 @@ int DnsResRecordArea::parse(void *dns_start, uint32_t dns_size, uint32_t offset,
     JUDGE_RETURN(!IS_VALID_DNS_PARSE_DATA_TYPE(parse_data_type), DNS_PARSE_ERROR_UNSPPORTED_DATA_TYPE);
     bool is_opposite = get_endian() == LITTLE_ENDIAN;
     reset();
+    /* 解析区域的公共部分  */
+    
+    printf("Dns.cpp  line%d\n", __LINE__);
+    printf("DnsResRecordArea::parse ==> offset = %d\n",offset);
     int error_code = _query_data.parse(dns_start, dns_size, offset, parse_data_type);
     JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
 
+    printf("Dns.cpp  line%d\n", __LINE__);
     u_char* data = (u_char*)dns_start + offset + _query_data._size;
+    printf("资源记录区域第一个字节的内容：%0X\n", ntohs(*(uint16_t*)data));
     memcpy(&(_ttl), data, sizeof(_ttl));
     data += sizeof(_ttl);
     memcpy(&(_res_data_size), data, sizeof(_res_data_size));
@@ -127,6 +139,7 @@ int DnsResRecordArea::parse(void *dns_start, uint32_t dns_size, uint32_t offset,
         _ttl = ntohl(_ttl);
         _res_data_size = ntohs(_res_data_size);
     }
+    printf("_res_data_size=%d  DNS_DOMAIN_BUFFER_SIZE=%d\n", _res_data_size, DNS_DOMAIN_BUFFER_SIZE);
     JUDGE_RETURN(_res_data_size >= DNS_DOMAIN_BUFFER_SIZE, DNS_PARSE_ERROR_RESOURCE_RECORD_AREA);
     int resource_data_type = get_resource_data_type();
     JUDGE_RETURN(!IS_VALID_DNS_PARSE_DATA_TYPE(resource_data_type), DNS_PARSE_ERROR_UNSPPORTED_DATA_TYPE);
@@ -176,7 +189,6 @@ bool Dns::is_valid_dns_header()
  * @return ErrorCode
  * @remark 此函数待优化
  */
-
 int Dns::parse_dns_data_area(void *dns_start, uint32_t size)
 {
     int error_code = PARSE_SUCCESS;
@@ -184,20 +196,24 @@ int Dns::parse_dns_data_area(void *dns_start, uint32_t size)
     // 标准查询并且返回码为0无差错，就进行解析
     if (_op_code == DNS_OPCODE_STANDARD_QUERY && _reply_code == DNS_REPLY_CODE_SUCCESS)
     {
-        // 解析查询区域
+        //如果问题数有多个，就需要来解析多个查询区域
         DnsAreaPublic area_public;
         for (int index = 0; index < _question_amount; ++index)
         {
+            printf("进入查询问题区域...\n");
             error_code = area_public.parse(dns_start, size, offset, DNS_PARSE_DATA_TYPE_DOMAIN);
             JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
             offset += area_public._size;
             _questions.push_back(area_public);
         }
-
+    
+        // 解析资源记录区域
         DnsResRecordArea res_record_area;
-        char str_ip[STR_IPV4_BUFFER_SIZE];
+        //char str_ip[STR_IPV4_BUFFER_SIZE];
         for (int index = 0; index < _answer_amount; index++)
         {
+            printf("进入资源记录区域...\n");
+            printf("query: offset= %d\n", offset);
             error_code = res_record_area.parse(dns_start, size, offset, DNS_PARSE_DATA_TYPE_DOMAIN);
             JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
             offset += res_record_area._size;
@@ -233,21 +249,29 @@ bool Dns::check_buffer_length(void *buffer, uint32_t size)
     return size >= DNS_HEADER_SIZE;
 }
 
+/*
+ * 解析整个dns报文
+ * @param buffer - 接收传入的dns报文的首地址
+ * @param size - 整个dns报文的大小
+ * */
 int Dns::parse(void *buffer, uint32_t size)
 {
     JUDGE_RETURN(!check_buffer_length(buffer, size), ETHERNET_PARSE_ERROR_MIN_LENGTH);
-    u_char *data = (u_char*)buffer; 
+    u_char *data = (u_char*)buffer;
+
     memcpy(&(_transaction_id), data, sizeof(_transaction_id));
     data += sizeof(_transaction_id);
 
-    /* get flags */
+    /* 解析flags，得到每个标志 */
+    // first_byte: 处理QR opcode AA TC RD标志
+    // second_byte: 处理RA zero rcode标志
     u_char first_byte = *data++;
     u_char second_byte = *data++;
     _is_response = DNS_QR_FLAG_GETTER(first_byte);
     _op_code = DNS_OPCODE_GETTER(first_byte);
     _is_authenticated_answer = DNS_AUTHENTICATED_ANSWER_FLAG_GETTER(first_byte);
     _is_truncated = DNS_TRUNCATED_FLAG_GETTER(first_byte);
-    _is_recursion_disired = DNS_RECURSION_DISIRED_FLAG_GETTER(second_byte);
+    _is_recursion_disired = DNS_RECURSION_DISIRED_FLAG_GETTER(first_byte);
     _is_recursion_available = DNS_RECURSION_AVAILABLE_FLAG_GETTER(second_byte);
     _reply_code = DNS_REPLY_CODE_GETTER(second_byte);
 
@@ -285,17 +309,18 @@ int Dns::debug_info()
         it.debug_info();
         printf(" ");
     }
-    printf(": answers: ");
+    printf("; answers: ");
     for (auto it : _answers)
     {
         it.debug_info();
         printf(" ");
     }
     printf("\n");
+    return 0;
 }
 
 /*
- * 解析dns报文资源数据
+ * 解析dns报文中的查询名/域名字段
  * @param dns_start  -- dns报文起始
  * @param dns_size   -- dms报文总长度
  * @param offset     -- 查询名在dns报文中的偏移
@@ -305,13 +330,16 @@ int Dns::debug_info()
 int Dns::parse_dns_qname(void *dns_start, uint32_t dns_size, uint32_t offset, Qname &data, int parse_data_type)
 {
     bool is_opposite = get_endian() == LITTLE_ENDIAN;
+    // 如果解析的数据类型是域名，就跳转到域名解析函数 
     if (parse_data_type == DNS_PARSE_DATA_TYPE_DOMAIN)
     {
+        printf("进入Dns::parse_dns_domain...\n");
         memset(data.domain, 0, DNS_DOMAIN_BUFFER_SIZE);
         return Dns::parse_dns_domain(dns_start, dns_size, offset, data.domain);
     }
     else 
     {
+        // 解析ipv4地址
         memcpy(&(data.ip), (u_char*)dns_start + offset, sizeof(data.ip));
         is_opposite ? data.ip = ntohl(data.ip) : 0;
         return sizeof(data.ip);
@@ -326,7 +354,6 @@ int Dns::parse_dns_qname(void *dns_start, uint32_t dns_size, uint32_t offset, Qn
  * @param data          -- 存储查询名/域名的字符数组
  * #return int          -- 实际存储用的字节长度
  * */
-
 int Dns::parse_dns_domain(void *dns_start, uint32_t dns_size, uint32_t offset, uint8_t *data)
 {
     JUDGE_RETURN(dns_start == nullptr || offset + DNS_QUERY_NAME_MIN_SIZE > dns_size, DNS_PARSE_ERROR_QUERY_NAME_ARGS);
@@ -346,18 +373,20 @@ int Dns::parse_dns_domain(void *dns_start, uint32_t dns_size, uint32_t offset, u
         {
             memcpy(&ptr_offset, per_cname, sizeof(ptr_offset));
             is_opposite ? ptr_offset = ntohs(ptr_offset) : ptr_offset;
+            // 得到偏移指针中指向第一次域名的偏移量（想对于dns报文）
             ptr_offset = DNS_CNAME_OFFSET_GETTER(ptr_offset);
 
             JUDGE_RETURN(ptr_offset + DNS_QUERY_NAME_MIN_SIZE > dns_size, 0);
             // per_cname 移动到第一次出现域名的地方
             per_cname = (u_char*)dns_start + ptr_offset;
+            // 此时real_size为两个字节，即偏移指针的大小
             is_jump ? real_size : real_size += sizeof(ptr_offset);
             is_jump = true;
         }
 
         /*
             冷知识 ：DNS 报文中每个域名部分的开头都是一个表示长度的字节，表示当前部分域名（标号）的长度
-            per_size = *per_cname++; *per_cname拿到当前域名部分的长度，赋值给per_size;然后per_cname指针后移,指向下一个字节，即真正的域名
+            per_size = *per_cname++; *per_cname拿到当前域名部分(标号)的长度，赋值给per_size;然后per_cname指针后移,指向下一个字节，即真正的域名
         */
         /* 单个域名拷贝 */
         per_size = *per_cname++;
@@ -372,9 +401,13 @@ int Dns::parse_dns_domain(void *dns_start, uint32_t dns_size, uint32_t offset, u
         }
     }
 
-    real_size >= 2 ? ptr_copy -= 2 : ptr_copy;
+    //real_size >= 2 ? ptr_copy -= 2 : ptr_copy;
+    real_size >= 2 ? ptr_copy -= 1 : ptr_copy;
     *ptr_copy = '\0';
     is_jump ? real_size : real_size += 1;       // 加上末尾的0x00
-    return real_size;
+    printf("real_size = %d\n", real_size);
+    if (is_jump)
+        return real_size;
+    return real_size - 2;
 
 }

@@ -11,8 +11,9 @@ using namespace std;
 #define DNS_HEADER_SIZE             12      // dns报文头部字节长度
 #define DNS_DOMAIN_MAX_SIZE         0xFF    // dns域名总长度不超过255
 #define DNS_DOMAIN_BUFFER_SIZE      (DNS_DOMAIN_MAX_SIZE + 1)   // dns域名数组最大总长度
-
 #define DNS_QUERY_NAME_MIN_SIZE     2       // dns查询域名最小数据长度（当报文中域名重复出现的时候）
+
+#define STR_IPV4_BUFFER_SIZE        4       // ipv4 buffer size
 
 /* dns头部QR标志  */
 #define DNS_QUERY_FLAG              false   // 查询标志
@@ -40,7 +41,7 @@ using namespace std;
 #define DNS_QUERY_TYPE_AAAA             28      // 由域名得到ipv6地址(AAAA)
 #define DNS_QUERY_TYPE_AXFR             252     // 传送整个区的请求(AXFR)
 #define DNS_QUERY_TYPE_ANY              255     // 对所有记录的请求(ANY)
-#define IS_VALID_DNS_QUERY_TYPE(type)   ((value) == DNS_QUERY_TYPE_A || (value) == DNS_QUERY_TYPE_NS || \
+#define IS_VALID_DNS_QUERY_TYPE(value)   ((value) == DNS_QUERY_TYPE_A || (value) == DNS_QUERY_TYPE_NS || \
                                         DNS_QUERY_TYPE_CNAME || (value) ==DNS_QUERY_TYPE_SOA || (value) == DNS_QUERY_TYPE_WKS || \
                                         (value) == DNS_QUERY_TYPE_PTR || (value) == DNS_QUERY_TYPE_HINFO || \
                                         (value) == DNS_QUERY_TYPE_MX || (value) == DNS_QUERY_TYPE_AAAA || \
@@ -70,7 +71,7 @@ using namespace std;
 
 /* DNS查询名字段 **/
 #define IS_DNS_CNAME_OFFSET_PTR(value)          (((value) & 0xC0) == 0xC0)  // dns查询名是否为指针偏移
-#define DNS_CNAME_OFFSET_GETTER(value)          ((value) & 0x3FFFF)         // dns查询名偏移获取 uint16_t
+#define DNS_CNAME_OFFSET_GETTER(value)          ((value) & 0x3FFF)         // 获得dns查询名/域名的偏移量 uint16_t
 
 /* dns头部数据获取  */
 #define DNS_QR_FLAG_GETTER(byte)                        (((byte) & 0x80) > 0)       // dns头QR标志获取，bool
@@ -82,7 +83,7 @@ using namespace std;
 #define DNS_REPLY_CODE_GETTER(byte)                     (((byte) & 0x0f))           // dns头返回码获取，uint8_t
 
 
-// Query区域中查询名，域名、ip地址及ipv6地址
+// Query区域中查询名，涵盖域名、ip地址及ipv6地址
 union Qname
 {
     // 查询名长度不确定，直接把缓冲区取到域名最大长度
@@ -99,7 +100,7 @@ public:
     Qname _name;            // 查询名
     uint16_t _query_type;   // 查询类型
     uint16_t _query_class;  // 查询类
-    uint32_t _size;         // 总长度，为实际在数据包中的字节长度
+    uint32_t _size;         // 公共部分的总长度，为实际在数据包中的字节长度
     uint32_t _data_type;    // 实际数据类型
 
     int parse(void *dns_start, uint32_t dns_size, uint32_t offset, int parse_data_type);
@@ -112,7 +113,7 @@ class DnsResRecordArea
 {
 public:
     DnsAreaPublic _query_data;
-    uint32_t _ttl;              // dns缓存实践(s)
+    uint32_t _ttl;              // dns缓存时间(s)
     uint16_t _res_data_size;    // 资源数据长度
     Qname _res_data;            // 资源数据
     uint32_t _size;             // 总长度，为实际在数据包中的字节长度
@@ -129,26 +130,26 @@ class Dns : public Protocol
 {
 public:
     /* dns头 */
-    uint16_t _transaction_id;           // 会话标识
+    uint16_t _transaction_id {0};           // 会话标识
     
-    bool _is_response;                  // 查询 / 响应标志
-    uint8_t _op_code;                   // 操作
-    bool _is_authenticated_answer;      // AA,应答是否为该域名的权威解析服务器
+    bool _is_response {0};                  // 查询 / 响应标志
+    uint8_t _op_code {0};                   // 操作
+    bool _is_authenticated_answer {0};      // AA,应答是否为该域名的权威解析服务器
 
-    bool _is_truncated;                 // TC,是否截断
-    bool _is_recursion_disired;         // RD,期望递归
-    bool _is_recursion_available;       // RA,可用递归
-    uint8_t _reply_code;                // 返回码
+    bool _is_truncated {0};                 // TC,是否截断
+    bool _is_recursion_disired {0};         // RD,期望递归
+    bool _is_recursion_available {0};       // RA,可用递归
+    uint8_t _reply_code {0};                // 返回码
 
-    uint16_t _question_amount;          // 查询区域数量
-    uint16_t _answer_amount;            // 回答区域数量
-    uint16_t _authority_amount;         // 授权区域数量
-    uint16_t _additional_amount;        // 附加区域数量
+    uint16_t _question_amount {0};          // 查询区域数量
+    uint16_t _answer_amount {0};            // 回答区域数量
+    uint16_t _authority_amount {0};         // 授权区域数量
+    uint16_t _additional_amount {0};        // 附加区域数量
 
-    vector<DnsAreaPublic> _questions;
-    vector<DnsResRecordArea> _answers;
-    vector<DnsResRecordArea> _authoritys;
-    vector<DnsResRecordArea> _additionals;
+    vector<DnsAreaPublic> _questions {0};
+    vector<DnsResRecordArea> _answers {0};
+    vector<DnsResRecordArea> _authoritys {0};
+    vector<DnsResRecordArea> _additionals {0};
 
     Dns();
     ~Dns();
