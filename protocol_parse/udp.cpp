@@ -1,6 +1,6 @@
 #include "udp.h"
 
-Udp::Udp() : Protocol(false)
+Udp::Udp() : Protocol(false), _data()
 {
     _is_opposite_byte = get_endian() == LITTLE_ENDIAN;
 }
@@ -33,18 +33,25 @@ int Udp::parse(void *buffer, uint32_t size)
 {
     JUDGE_RETURN(!check_buffer_length(buffer, size), UDP_PARSE_ERROR_HEADER_LENGTH);
     u_char *data = (u_char*)buffer;
-    printf("source port: %u\n", ntohs(*((uint16_t*)(&data[0]))) );
+    //printf("source port: %u\n", ntohs(*((uint16_t*)(&data[0]))) );
     _source_port = ntohs((*((uint16_t*)(&data[0]))));
     _target_port = ntohs(*((uint16_t*)(&data[2])));
     _total_size = ntohs((*((uint16_t*)(&data[4]))));
     _check_sum = ntohs((*((uint16_t*)(&data[6]))));
     
     _is_opposite_byte ? opposite_byte() : 1;
-    printf("_is_opposite_byte = %d\n", _is_opposite_byte);
-    printf("_source_port = %u, _target_port = %u, _total_size = %u _check_sum = %u\n",_source_port, _target_port, _total_size, _check_sum);
-    printf("size = %d  _total_size = %d\n", size, _total_size);
+    //printf("_is_opposite_byte = %d\n", _is_opposite_byte);
+    //printf("_source_port = %u, _target_port = %u, _total_size = %u _check_sum = %u\n",_source_port, _target_port, _total_size, _check_sum);
+    //printf("size = %d  _total_size = %d\n", size, _total_size);
     JUDGE_RETURN(!check_total_size(size), UDP_PARSE_ERROR_DATA_LENGTH);
-    return PARSE_SUCCESS;
+    int error_code = PARSE_SUCCESS;
+    if (_source_port == DNS_PORT || _target_port == DNS_PORT)
+    {
+        error_code = _data.parse(data + UDP_HEADER_SIZE, _total_size - UDP_HEADER_SIZE);
+        _data.debug_info();
+    }
+    
+    return error_code;
 }
 
 int Udp::opposite_byte()

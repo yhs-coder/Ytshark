@@ -57,9 +57,17 @@ int DnsAreaPublic::parse(void *dns_start, uint32_t dns_size, uint32_t offset, in
     _size = Dns::parse_dns_qname(dns_start, dns_size, offset, _name, parse_data_type);
     //JUDGE_RETURN(_size <= 0, DNS_PARSE_ERROR_PARSE_DOMAIN);
     _data_type = parse_data_type;
-    printf("域名的长度 size=%d\n", _size);
     /* 解析查询类型和查询类  */
-    data += _size;
+    if (_size == 2)
+    {
+        // 如果是偏移指针，就只移动两个字节
+        data += _size;
+    }
+    else 
+    {
+        data += (_size + 2);
+        _size += 2; // 加上2表示加上域名一开始表示标号长度的一字节和结尾
+    }
     memcpy(&(_query_type), data, sizeof(_query_type));
     data += sizeof(_query_type);
     memcpy(&(_query_class), data, sizeof(_query_class));
@@ -72,11 +80,9 @@ int DnsAreaPublic::parse(void *dns_start, uint32_t dns_size, uint32_t offset, in
         _query_class = ntohs(_query_class);
     }
    JUDGE_RETURN(!IS_VALID_DNS_QUERY_TYPE(_query_type), DNS_PARSE_ERROR_QUERY_TYPE);
-   printf("_query_class = %d\n", _query_class);
    JUDGE_RETURN(!IS_VALID_DNS_QUERY_CLASS(_query_class), DNS_PARSE_ERROR_QUERY_CLASS);
    //_size =  _size + sizeof(_query_type) + sizeof(_query_class) ; 
-   _size =  _size + 2 + sizeof(_query_type) + sizeof(_query_class); // +2表示域名一开始表示标号长度的一字节和结尾0的一字节 
-    printf("查询区域总长度 size=%d\n", _size);
+   _size =  _size  + sizeof(_query_type) + sizeof(_query_class); 
    return PARSE_SUCCESS;
 }
 
@@ -121,14 +127,10 @@ int DnsResRecordArea::parse(void *dns_start, uint32_t dns_size, uint32_t offset,
     reset();
     /* 解析区域的公共部分  */
     
-    printf("Dns.cpp  line%d\n", __LINE__);
-    printf("DnsResRecordArea::parse ==> offset = %d\n",offset);
     int error_code = _query_data.parse(dns_start, dns_size, offset, parse_data_type);
     JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
 
-    printf("Dns.cpp  line%d\n", __LINE__);
     u_char* data = (u_char*)dns_start + offset + _query_data._size;
-    printf("资源记录区域第一个字节的内容：%0X\n", ntohs(*(uint16_t*)data));
     memcpy(&(_ttl), data, sizeof(_ttl));
     data += sizeof(_ttl);
     memcpy(&(_res_data_size), data, sizeof(_res_data_size));
@@ -139,7 +141,6 @@ int DnsResRecordArea::parse(void *dns_start, uint32_t dns_size, uint32_t offset,
         _ttl = ntohl(_ttl);
         _res_data_size = ntohs(_res_data_size);
     }
-    printf("_res_data_size=%d  DNS_DOMAIN_BUFFER_SIZE=%d\n", _res_data_size, DNS_DOMAIN_BUFFER_SIZE);
     JUDGE_RETURN(_res_data_size >= DNS_DOMAIN_BUFFER_SIZE, DNS_PARSE_ERROR_RESOURCE_RECORD_AREA);
     int resource_data_type = get_resource_data_type();
     JUDGE_RETURN(!IS_VALID_DNS_PARSE_DATA_TYPE(resource_data_type), DNS_PARSE_ERROR_UNSPPORTED_DATA_TYPE);
@@ -201,6 +202,7 @@ int Dns::parse_dns_data_area(void *dns_start, uint32_t size)
         for (int index = 0; index < _question_amount; ++index)
         {
             printf("进入查询问题区域...\n");
+            // 标准查询 对应的是域名查询对应的ip地址 
             error_code = area_public.parse(dns_start, size, offset, DNS_PARSE_DATA_TYPE_DOMAIN);
             JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
             offset += area_public._size;
@@ -213,7 +215,6 @@ int Dns::parse_dns_data_area(void *dns_start, uint32_t size)
         for (int index = 0; index < _answer_amount; index++)
         {
             printf("进入资源记录区域...\n");
-            printf("query: offset= %d\n", offset);
             error_code = res_record_area.parse(dns_start, size, offset, DNS_PARSE_DATA_TYPE_DOMAIN);
             JUDGE_RETURN(error_code != PARSE_SUCCESS, error_code);
             offset += res_record_area._size;
@@ -302,20 +303,24 @@ int Dns::opposite_byte()
 
 int Dns::debug_info()
 {
-    printf("DNS: %s: ", (_is_response == DNS_QUERY_FLAG ? "query" : "response"));
+    printf("DNS%s: ", (_is_response == DNS_QUERY_FLAG ? "请求" : "响应"));
     printf("questions: ");
     for (auto it : _questions)
     {
         it.debug_info();
         printf(" ");
     }
-    printf("; answers: ");
-    for (auto it : _answers)
-    {
-        it.debug_info();
-        printf(" ");
-    }
     printf("\n");
+    if (_is_response)
+    {
+        printf("; answers: ");
+        for (auto it : _answers)
+        {
+            it.debug_info();
+            printf(",  ");
+        }
+        printf("\n");
+    }
     return 0;
 }
 
@@ -329,11 +334,10 @@ int Dns::debug_info()
 
 int Dns::parse_dns_qname(void *dns_start, uint32_t dns_size, uint32_t offset, Qname &data, int parse_data_type)
 {
-    bool is_opposite = get_endian() == LITTLE_ENDIAN;
+    //bool is_opposite = get_endian() == LITTLE_ENDIAN;
     // 如果解析的数据类型是域名，就跳转到域名解析函数 
     if (parse_data_type == DNS_PARSE_DATA_TYPE_DOMAIN)
     {
-        printf("进入Dns::parse_dns_domain...\n");
         memset(data.domain, 0, DNS_DOMAIN_BUFFER_SIZE);
         return Dns::parse_dns_domain(dns_start, dns_size, offset, data.domain);
     }
@@ -341,7 +345,7 @@ int Dns::parse_dns_qname(void *dns_start, uint32_t dns_size, uint32_t offset, Qn
     {
         // 解析ipv4地址
         memcpy(&(data.ip), (u_char*)dns_start + offset, sizeof(data.ip));
-        is_opposite ? data.ip = ntohl(data.ip) : 0;
+        //is_opposite ? data.ip = ntohl(data.ip) : 0;
         return sizeof(data.ip);
     }
 }
@@ -359,13 +363,14 @@ int Dns::parse_dns_domain(void *dns_start, uint32_t dns_size, uint32_t offset, u
     JUDGE_RETURN(dns_start == nullptr || offset + DNS_QUERY_NAME_MIN_SIZE > dns_size, DNS_PARSE_ERROR_QUERY_NAME_ARGS);
     // 指针移动到查询名/域名 的字段位置
     u_char *per_cname = (u_char*)dns_start + offset;
-    u_char *ptr_copy = data;
+    u_char *ptr_copy = data;        // 一个指向存储解析后的域名字符串的指针
     uint16_t ptr_offset = 0;        // dns报文偏移
     bool is_jump = false;           // 是否已经用过指针偏移
     uint32_t per_size = 1;          // 用来表示当前域名部分的长度，初始值设为1， 
     uint32_t real_size = 0;         // real_size 为数据的实际存储长度，指针跳转后不在计数
     bool is_opposite = get_endian() == LITTLE_ENDIAN;
 
+    // 循环遍历查询名字段中的域名每个部分
     for (; per_size > 0; ptr_copy += per_size + 1, per_cname  += per_size)
     {
         /* 查看报文域名是否重复(是否有偏移指针)，指针跳转 */
@@ -401,13 +406,14 @@ int Dns::parse_dns_domain(void *dns_start, uint32_t dns_size, uint32_t offset, u
         }
     }
 
-    //real_size >= 2 ? ptr_copy -= 2 : ptr_copy;
-    real_size >= 2 ? ptr_copy -= 1 : ptr_copy;
+    // ptr_copy这里需要-2，是因为在上面循环中，ptr_copy最后在com.这个点后面又移动了两个字节
+    real_size >= 2 ? ptr_copy -= 2 : ptr_copy;
+    // 把域名最后一个点替换成结束字符
     *ptr_copy = '\0';
-    is_jump ? real_size : real_size += 1;       // 加上末尾的0x00
-    printf("real_size = %d\n", real_size);
+    is_jump ? real_size : real_size += 1;       // 我认为是加上域名一开始表示标号长度的一个字节(.加上末尾的0x00)
     if (is_jump)
         return real_size;
     return real_size - 2;
+    //return real_size;
 
 }

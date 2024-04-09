@@ -2,6 +2,7 @@
 #define  __UDP_H__ 
 
 #include "protocol.h"
+#include "dns.h"
 
 #define UDP_HEADER_SIZE         8       // upd报文头部字节长度
 
@@ -12,8 +13,8 @@ public:
     uint16_t _target_port {0};      // 目的端口
     uint16_t _total_size {0};       // 总长度
     uint16_t _check_sum {0};        // 校验值
-    void *_data{nullptr};           // 数据部分
-
+    //void *_data{nullptr};           // 数据部分
+    Dns _data; 
     Udp();
     ~Udp();
 
