@@ -122,7 +122,7 @@ public:
     // 调试，输出查询问题区域解析的内容
     void debug_query_info()
     {
-        std::cout << " qname:" << _qname << std::endl;
+        std::cout << " qname: " << _qname << std::endl;
         // printf(" qname: %s\n type: %u\n class: %u\n", _qname.c_str(), _type, _class);
         printf(" type: %u\n class: %u\n", _type, _class);
         printf(" qname len: %u\n total len: %u\n", _qname_len, _total_len);
@@ -227,8 +227,13 @@ public:
     AddrIPv4 ipv4_addr() const noexcept
     {
         if (is_ipv4())
-            return AddrIPv4{as<uint32_t>(_dns + 12 + _qname_len + 2 + 2 + 4 + 2)};
+            return AddrIPv4{as<uint32_t>(_dns + _offset + _qname_len + 2 + 2 + 4 + 2)};
         return {};
+    }
+
+    std::string cname() const noexcept
+    {
+        return _cname;
     }
 
     // 解析整个资源记录区域
@@ -246,7 +251,12 @@ public:
         {
             parce_cname(_offset + _qname_len + 2 + 2 + 4 + 2);
         }
+        else if (is_ipv4())
+        {
+            _cname = ipv4_addr().to_string();
+        }
     }
+
     void debug_res_info()
     {
         debug_query_info();
@@ -258,7 +268,7 @@ public:
         }
         else if (is_ipv4())
         {
-            printf(" ip address: %s\n", ipv4_addr().to_string().c_str());
+            printf(" ip address: %s\n", _cname.c_str());
         }
     }
 
@@ -270,7 +280,21 @@ private:
         // parse_qname(_dns, offset);
         // _cname = qname();
         auto pos = offset;
-        uint8_t len =
+        uint8_t len = _dns[pos];
+        while (len != 0)
+        {
+            if (is_pointer(len))
+            {
+                pos = as_host<uint16_t>(_dns + pos) & 0x3fff;
+                len = _dns[pos];
+                continue;
+            }
+            _cname.append((char *)_dns + pos + 1, len);
+            pos += (len + 1);
+            len = _dns[pos];
+            if (len != 0)
+                _cname.append(".");
+        }
     }
 
     uint32_t _ttl{0};               // 生存时间
@@ -413,12 +437,12 @@ public:
     {
         std::string QR[] = {"查询", "响应"};
         printf("DNS%s: \n", QR[_is_response].c_str());
-        debug_header_info();
+        // debug_header_info();
         printf("Query: \n");
         for (auto it : _query_list)
         {
-            it.debug_query_info();
-            printf(" ");
+            // it.debug_query_info();
+            std::cout << it.qname() << ", ";
         }
         printf("\n");
         if (_is_response)
@@ -426,8 +450,10 @@ public:
             printf("Answers: \n");
             for (auto it : _response_list)
             {
-                it.debug_res_info();
+                // it.debug_res_info();
+                std::cout << it.cname() << ", ";
             }
+            printf("\n");
         }
     }
 
