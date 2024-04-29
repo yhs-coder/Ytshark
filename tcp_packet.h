@@ -58,6 +58,71 @@ public:
         parse();
     }
 
+    // 检查是否为HTTP方法
+    bool is_http_method(const char *data) const
+    {
+        static const char *methods[] = {"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "TRACE"};
+        for (auto method : methods)
+        {
+            if (strncmp(data, method, strlen(method)) == 0)
+                return true;
+        }
+        return false;
+    }
+
+    // 检查是否为HTTP状态码
+    bool is_http_status(const char *data) const
+    {
+        static const char *status_codes[] = {"200", "301", "302", "404", "500"};
+        for (auto code : status_codes)
+        {
+            if (strncmp(data, code, strlen(code)) == 0)
+                return true;
+        }
+        return false;
+    }
+
+    // 检查是否为HTTP响应行特征
+    bool is_http_response_line(const char *data) const
+    {
+        return strncmp(data, "HTTP/1.1", strlen("HTTP/1.1")) == 0;
+    }
+
+    bool is_http_port() const
+    {
+        return _target_port == 80 || _source_port == 80;
+    }
+
+    // 检查http报文长度有效性
+    bool check_http_len() const
+    {
+        return _data_size - _header_len;
+    }
+
+    bool is_http_protocol(const char *http_data) const
+    {
+        return is_http_method(http_data) || is_http_response_line(http_data);
+    }
+    // 检查是否为HTTP请求或响应
+    bool is_http_message() const
+    {
+        const char *http_data = (const char *)_data + _header_len;
+        if (check_http_len())
+        {
+            // 端口不为80的http报文识别检测
+            if (is_http_protocol(http_data))
+                return true;
+
+            if (is_http_port())
+                return is_http_protocol(http_data);
+        }
+        return false;
+    }
+
+    uint8_t header_len() const noexcept
+    {
+        return _header_len;
+    }
     // 返回tcp协议上层数据
     const uint8_t *payload() const noexcept
     {
