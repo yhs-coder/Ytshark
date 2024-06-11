@@ -43,25 +43,24 @@ public:
     SqlInjectionDetector()
         : _pattern(
               "(?:\\bUNION\\b|\\bSELECT\\b|\\bWHERE\\b|\\bORDER BY\\b|\\bAND\\b|\\bOR\\b)|"
-              "(?:\\%7C%7C|\\%26%26|\\%23|\\%2D%2D|\\%2D\\+\\+)|"
+              //"(?:\\%7C%7C|\\%26%26|\\%23|\\%2D%2D|\\%2D\\+\\+)|"
               "(--|#|--+|#+)|"  // 注释符号
               "(?:\\bUPDATEXML\\(|\\bEXTRACT\\(|\\bCONCAT\\(|\\bGROUP_CONCAT\\()|"
               "(\\bIF\\(|\\bDATABASE\\(|\\bUSER\\(|\\bSYSTEM_USER\\))",
               std::regex_constants::icase) {}
     void detect(const TcpPacket& packet, const std::string& ip) override {
     }
-    bool detect(const std::string& data) {
+    bool detect(const std::string& data) override {
         if (std::regex_search(data, _pattern)) {
             send_alert();
         }
     }
-    void send_alert() {
+    void send_alert() override {
         AlertMail test_mail;
         test_mail.message = "hacking!!!!服务器遭受sql攻击！！！请尽快处理！！！";
         _base = std::make_unique<SslSmtpEmail>("smtp.163.com", "465");
         _base->send_email(test_mail.from, test_mail.password, test_mail.to, test_mail.subject, test_mail.message);
-        sleep(10);
-        exit(-1);
+        sleep(3);
     }
 };
 
@@ -77,26 +76,24 @@ public:
               // 检测内联事件处理器，如 onclick、onerror 等
               "(?:<[^>]*(\\s*(on[a-z]+=(\"[^\"]*\"|'[^']*'|[^'\">\\s]+)))+>)|"
               // 检测url编码的内联事件处理器
-              "(?:%3C[^%3E]*(%20*(on[a-z]+=(%22[^%22]*%22|%27[^%27]*%27|[^%27%22%3E%20]+)))+%20*%3E)|"
+              //"(?:%3C[^%3E]*(%20*(on[a-z]+=(%22[^%22]*%22|%27[^%27]*%27|[^%27%22%3E%20]+)))+%20*%3E)|"
               // 检测伪协议，javascript伪协议: data伪协议:
-              "(?:(javascript|data)[:\"'][^:<>\"']*)|"
-              // 检测url编码的伪协议
-              "(?:(javascript|data):[^:<>%22%27]*)"
+              "(?:(javascript|data)[:\"'][^:<>\"']*)",
               // 检测base64编码的数据URI
-              "(?:base64,\\s*[a-zA-Z0-9+/]+(=|==)*)|"
+              //"(?:base64,\\s*[a-zA-Z0-9+/]+(=|==)*)|"
               // 检测HTML实体，检测编码绕过情况
-              "(?:&#[xXu]?[0-9a-fA-F]+;)|",
-              // 检测混合大小写的javascript
-              std::regex_constants::icase | std::regex_constants::ECMAScript) {}
+              //"(?:&#[xXu]?[0-9a-fA-F]+;)|",
+              std::regex_constants::icase |
+                  std::regex_constants::ECMAScript) {}
     void detect(const TcpPacket& packet, const std::string& ip) override {
     }
 
-    bool detect(const std::string& data) {
+    bool detect(const std::string& data) override {
         if (std::regex_search(data, _pattern)) {
             send_alert();
         }
     }
-    void send_alert() {
+    void send_alert() override {
         AlertMail test_mail;
         test_mail.message = "hacking!!!!服务器遭受xss攻击！！！";
         _base = std::make_unique<SslSmtpEmail>("smtp.163.com", "465");
@@ -113,17 +110,20 @@ public:
         // ack有效
         if (packet.is_syn()) {
             _syn_counts[src_ip]++;
+
             if (_syn_counts[src_ip] > _syn_threshold) {
                 // todo: 此时发出邮件警告 send_alert
                 std::cout << "SYN FLOOD" << std::endl;
                 send_alert();
+                _syn_counts[src_ip] = 0;
             }
+            _last_seen[src_ip] = std::chrono::system_clock::now();  // 更新最后活跃时间
         }
     }
-    bool detect(const std::string& data) {
+    bool detect(const std::string& data) override {
     }
 
-    void send_alert() {
+    void send_alert() override {
         AlertMail test_mail;
         test_mail.message = "hacking!!!!服务器遭受SYN FLOOD攻击！！！请尽快处理！！！";
         _base = std::make_unique<SslSmtpEmail>("smtp.163.com", "465");
@@ -131,20 +131,33 @@ public:
     }
 
 private:
-    // 清理过期计数
     void clean() {
-        // 获取当前时间点
         auto now = std::chrono::system_clock::now();
-        for (auto it = _syn_counts.begin(); it != _syn_counts.end(); it++) {
-            if (now - std::chrono::system_clock::time_point{} > std::chrono::seconds(_time_window_sec))
+        for (auto it = _syn_counts.begin(); it != _syn_counts.end();) {
+            if (now - _last_seen[it->first] > std::chrono::seconds(_time_window_sec)) {
                 it = _syn_counts.erase(it);
+                _last_seen.erase(it->first);  // 同时从_last_seen中删除
+            } else {
+                ++it;
+            }
         }
     }
+    // 清理过期计数
+    // void clean() {
+    //     // 获取当前时间点
+    //     auto now = std::chrono::system_clock::now();
+    //     for (auto it = _syn_counts.begin(); it != _syn_counts.end(); it++) {
+    //         if (now - std::chrono::system_clock::time_point{} > std::chrono::seconds(_time_window_sec))
+    //             it = _syn_counts.erase(it);
+    //     }
+    // }
 
-    std::map<std::string, int> _syn_counts;  // 存储ip地址和syn包计数
-    const int _syn_threshold = 1000;         // syn包阈值
-    const int _time_window_sec = 60;         // 事件窗口，1分钟
+    std::map<std::string, int> _syn_counts;                                   // 存储ip地址和syn包计数
+    const int _syn_threshold = 10000;                                         // syn包阈值
+    const int _time_window_sec = 10;                                          // 事件窗口，1分钟
+    std::map<std::string, std::chrono::system_clock::time_point> _last_seen;  // 存储IP地址和最后活跃时间
 };
+
 // ACK Flood攻击检测器
 class AckFloodDetector : public AttackDetector {
 public:
@@ -158,12 +171,14 @@ public:
                 // todo: 此时发出邮件警告 send_alert
                 std::cout << "ACK FLOOD" << std::endl;
                 send_alert();
+                _ack_counts[src_ip] = 0;
             }
+            _last_seen[src_ip] = std::chrono::system_clock::now();  // 更新最后活跃时间
         }
     }
-    bool detect(const std::string& data) {
+    bool detect(const std::string& data) override {
     }
-    void send_alert() {
+    void send_alert() override {
         AlertMail test_mail;
         test_mail.message = "hacking!!!!服务器遭受ACK FLOOD攻击！！！请尽快处理！！！";
         _base = std::make_unique<SslSmtpEmail>("smtp.163.com", "465");
@@ -172,16 +187,29 @@ public:
 
 private:
     void clean() {
-        // 获取当前时间点
         auto now = std::chrono::system_clock::now();
-        for (auto it = _ack_counts.begin(); it != _ack_counts.end(); it++) {
-            if (now - std::chrono::system_clock::time_point{} > std::chrono::seconds(_time_window_sec))
+        for (auto it = _ack_counts.begin(); it != _ack_counts.end();) {
+            if (now - _last_seen[it->first] > std::chrono::seconds(_time_window_sec)) {
                 it = _ack_counts.erase(it);
+                _last_seen.erase(it->first);  // 同时从_last_seen中删除
+            } else {
+                ++it;
+            }
         }
     }
-    const int _threshold = 100;              // ack阈值
-    std::map<std::string, int> _ack_counts;  // 存储ip地址和ack包计数
-    const int _time_window_sec = 60;         // 事件窗口，1分钟
+    // void clean() {
+    //     // 获取当前时间点
+    //     auto now = std::chrono::system_clock::now();
+    //     for (auto it = _ack_counts.begin(); it != _ack_counts.end(); it++) {
+    //         if (now - std::chrono::system_clock::time_point{} > std::chrono::seconds(_time_window_sec))
+    //             it = _ack_counts.erase(it);
+    //     }
+    // }
+
+    const int _threshold = 30000;                                             // ack阈值
+    std::map<std::string, int> _ack_counts;                                   // 存储ip地址和ack包计数
+    const int _time_window_sec = 1;                                           // 事件窗口，1分钟
+    std::map<std::string, std::chrono::system_clock::time_point> _last_seen;  // 存储IP地址和最后活跃时间
 };
 
 // Port Scan攻击检测器
@@ -190,20 +218,28 @@ public:
     void detect(const TcpPacket& packet, const std::string& ip) override {
         clean();
         std::string src_ip = ip;
+        std::cout << "ip ->port: " << ip << " ->" << packet.target_port() << std::endl;
+
+        // if (packet.is_syn()) {
+        //     _syn_counts[src_ip]++;
+        // }
         int dst_port = packet.target_port();
         _port_scan_info[src_ip].insert(dst_port);
+        _last_seen[src_ip] = std::chrono::system_clock::now();
+        // if (_port_scan_info[src_ip].size() > _port_threshold || _syn_counts[src_ip] > _syn_threshold) {
         if (_port_scan_info[src_ip].size() > _port_threshold) {
-            // todo: send_alert 发送邮件告警
             std::cout << "Port Scan" << std::endl;
+            send_alert();
+            sleep(5);
             _port_scan_info[src_ip].clear();
         }
     }
-    bool detect(const std::string& data) {
+    bool detect(const std::string& data) override {
     }
 
-    void send_alert() {
+    void send_alert() override {
         AlertMail test_mail;
-        test_mail.message = "hacking!!!!服务器遭受端口扫描攻击！！！请尽快处理！！！";
+        test_mail.message = "服务器遭受端口扫描攻击！！！请尽快处理！！！";
         _base = std::make_unique<SslSmtpEmail>("smtp.163.com", "465");
         _base->send_email(test_mail.from, test_mail.password, test_mail.to, test_mail.subject, test_mail.message);
     }
@@ -211,23 +247,37 @@ public:
 private:
     void clean() {
         auto now = std::chrono::system_clock::now();
-        for (auto it = _port_scan_info.begin(); it != _port_scan_info.end(); it++) {
-            bool expired = true;
-            // 检查每个端口
-            for (auto& port : it->second) {
-                if (now - std::chrono::system_clock::time_point{} > std::chrono::seconds(_time_window_sec)) {
-                    expired = false;
-                    break;
-                }
+        for (auto it = _last_seen.begin(); it != _last_seen.end();) {
+            if (now - it->second > std::chrono::seconds(_time_window_sec)) {
+                _port_scan_info.erase(it->first);  // 删除超时的IP地址的所有端口信息
+                it = _last_seen.erase(it);         // 删除超时的条目
+            } else {
+                ++it;
             }
-            if (expired)
-                it = _port_scan_info.erase(it);
         }
     }
-
+    // void clean() {
+    //     auto now = std::chrono::system_clock::now();
+    //     for (auto it = _port_scan_info.begin(); it != _port_scan_info.end(); it++) {
+    //         bool expired = true;
+    //         // 检查每个端口
+    //         for (auto& port : it->second) {
+    //             if (now - std::chrono::system_clock::time_point{} > std::chrono::seconds(_time_window_sec)) {
+    //                 expired = false;
+    //                 break;
+    //             }
+    //         }
+    //         if (expired)
+    //             it = _port_scan_info.erase(it);
+    //     }
+    // }
+    std::map<std::string, int> _syn_counts;
     std::map<std::string, std::set<int>> _port_scan_info;  // 存储ip地址和尝试连接的端口集合
     const int _port_threshold = 100;                       // 端口阈值
-    const int _time_window_sec = 60;
+    const int _time_window_sec = 10;
+    // const int _syn_threshold = 10;
+    std::map<std::string, std::chrono::system_clock::time_point>
+        _last_seen;  // 存储端口和最后活跃时间
 };
 
 // 攻击检测器工厂类
@@ -259,7 +309,7 @@ public:
         register_detector("sql", "sql");
         register_detector("xss", "xss");
         register_detector("syn flood", "syn flood");
-        register_detector("ack flood", "ack flood");
+        // register_detector("ack flood", "ack flood");
         register_detector("portscan", "portscan");
     }
     void register_detector(const std::string& name, const std::string& type) {
