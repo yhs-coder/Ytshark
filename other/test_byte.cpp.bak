@@ -1,0 +1,23 @@
+#include <iostream>
+#include <arpa/inet.h>
+#include "byte.h"
+
+int main()
+{
+    uint32_t a = 0x12345678;
+    std::cout << std::hex << a << std::endl;
+    if (!is_little_endian())
+    {
+        std::cout << "小端字节序" << std::endl;
+        std::cout << std::hex << a << std::endl;
+    }
+    else
+    {
+        std::cout << "大端字节序" << std::endl;
+        a = htonl(a);
+        std::cout << std::hex << a << std::endl;
+        a = byte_swap(a);
+        std::cout << std::hex << a << std::endl;
+    }
+    return 0;
+}
