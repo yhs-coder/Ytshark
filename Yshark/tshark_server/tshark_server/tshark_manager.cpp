@@ -206,7 +206,9 @@ std::string TsharkManager::convert_timestamp_format(std::string timestamp)
 std::vector<AdapterInfo> TsharkManager::get_network_adapters()
 {
     // 需要过滤掉的虚拟网卡
-    std::set<std::string> special_interfaces = { "VMware Network Adapter VMnet8", "VMware Network Adapter VMnet1" };
+    std::set<std::string> special_interfaces = {"VMware Network Adapter VMnet8", "VMware Network Adapter VMnet1", 
+                                                "Event Tracing for Windows (ETW) reader", "蓝牙网络连接",
+                                                "sshdump", "ciscodump", "udpdump", "randpkt"};
     std::vector<AdapterInfo> interfaces;
     char buffer[256] = { 0 };
     std::string result;
@@ -222,14 +224,14 @@ std::vector<AdapterInfo> TsharkManager::get_network_adapters()
     while (fgets(buffer, sizeof(buffer), pipe.get()) != nullptr) {
         result += buffer;
     }
-
-    // 编码转换
-    //UTF8TOANSIString(result);
-    // 解析tshark的输出，输出格式为：
-    // 1. \Device\NPF_{xxxxxx} (网卡描述)
     std::istringstream stream(result);
     std::string line;
     int index = 1;
+    // tshark的输出，输出格式为：
+    // 1. \Device\NPF_{xxxxxx} (网卡描述)
+    // 12. etwdump (Event Tracing for Windows (ETW) reader)
+#if 0
+    // 第一种实现方式：
     while (std::getline(stream, line)) {
         // 查找第一个空格S
         size_t start_pos = line.find(' ');
@@ -264,7 +266,41 @@ std::vector<AdapterInfo> TsharkManager::get_network_adapters()
 
         }
     }
+#else 
+    // 第二种实现方式：
+    // 提取中间网卡名称，以及最后的网卡描述性名称
+    while (std::getline(stream, line)) {
+        std::string interface_name;
+        std::string remark;
+        size_t space_flag = line.find(' ');
+        // 查找左边第一个出现的 '('
+        size_t lflag = line.find_first_of('(');
+        // 查找最后一个出现的 ')'
+        size_t rflag = line.find_last_of(')');
+        if (space_flag != std::string::npos && lflag != std::string::npos && rflag != std::string::npos) {
+            interface_name = line.substr(space_flag + 1, lflag - 1 - space_flag - 1);
+            remark = line.substr(lflag + 1, rflag - lflag - 1);
+        }
+        else {
+            // 这种情况：1. ap1
+            interface_name = line.substr(space_flag + 1);
+        }
 
+        // 过滤特殊网卡
+        // windows特殊网卡名位置在remark中, linux系统特殊网卡名则在interface_name
+        // 1. \Device\NPF_{xxx} (VMware Network Adapter VMnet8)
+        // 2. sshdump (SSH remote capture)
+        if (special_interfaces.find(remark) != special_interfaces.end() || special_interfaces.find(interface_name) != special_interfaces.end()) {
+            continue;
+        }
+        AdapterInfo adapter_info;
+        adapter_info.name = interface_name;
+        adapter_info.id = index++;
+        adapter_info.remark = remark;
+        LOG_F(INFO, "网卡[%d]: name[%s] remark[%s]", adapter_info.id, adapter_info.name.c_str(), adapter_info.remark.c_str());
+        interfaces.emplace_back(adapter_info);
+    }
+#endif
     return interfaces;
 }
 
