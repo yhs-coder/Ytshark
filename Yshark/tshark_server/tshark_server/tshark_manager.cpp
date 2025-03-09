@@ -1,7 +1,7 @@
 #include "tshark_manager.h"
 #include "utf8_to_ansi.h"
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 #include <windows.h>
 // 使用宏使用windows和unix的不同popen实现
 #define popen _popen
@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <cstdio>
+#include <sys/select.h>
+#include <fcntl.h>
 #endif
 
 
@@ -304,6 +306,39 @@ std::vector<AdapterInfo> TsharkManager::get_network_adapters()
     return interfaces;
 }
 
+bool TsharkManager::start_capture(std::string adapter_name)
+{
+    LOG_F(INFO, "即将开始抓包， 网卡：%s", adapter_name.c_str());
+
+    // 关闭停止标记
+    _stop_flag = false;
+
+    // 启动抓包线程
+    _capture_work_thread = std::make_shared<std::thread>(&TsharkManager::capture_work_thread_entry, this, "\"" + adapter_name + "\"");
+    return true;
+}
+
+bool TsharkManager::stop_capture()
+{
+    LOG_F(INFO, "即将停止抓包");
+    _stop_flag = true;
+    // 阻塞当前线程，直到_capture_work_thread采集数据包的线程退出，join才返回
+    _capture_work_thread->join();
+    return true;
+}
+
+void TsharkManager::set_non_blocking(int fd)
+{
+#if defined(_WIN32) || defined(WIN_64)
+    unsigned long mode = 1;
+    ioctlsocket(fd, FIONBIO, &mode);
+#else
+    int flags = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+#endif
+
+}
+
 bool TsharkManager::parse_line(std::string line, std::shared_ptr<Packet> packet)
 {
     // 编码转换
@@ -366,5 +401,86 @@ bool TsharkManager::parse_line(std::string line, std::shared_ptr<Packet> packet)
     else {
         return false;
     }
+}
+
+void TsharkManager::capture_work_thread_entry(std::string adapter_name)
+{
+    std::string capture_file = "capture.pcap";
+    std::vector<std::string> tshark_args = {
+        _tshark_path,
+        "-i", adapter_name.c_str(),     // 采集指定网卡数据
+        "-w", capture_file,             // 默认将采集的数据包写入到这个文件
+        "-F", "pcap",                   // 指定存储的格式为PCAP格式
+        "-T", "fields",
+        "-e", "frame.number",
+        "-e", "frame.time_epoch",
+        "-e", "frame.len",
+        "-e", "frame.cap_len",
+        "-e", "eth.src",
+        "-e", "eth.dst",
+        "-e", "ip.src",
+        "-e", "ipv6.src",
+        "-e", "ip.dst",
+        "-e", "ipv6.dst",
+        "-e", "tcp.srcport",
+        "-e", "udp.srcport",
+        "-e", "tcp.dstport",
+        "-e", "udp.dstport",
+        "-e", "_ws.col.Protocol",
+        "-e", "_ws.col.Info",
+    };
+
+    // 拼接tshark命令
+    std::string command;
+    for (auto arg : tshark_args) {
+        command += arg;
+        command += " ";
+    }
+
+    // 创建管道，执行thsark命令
+    FILE* pipe = popen(command.c_str(), "r");
+    if (!pipe) {
+        //std::cerr << "Failed to run tshark command!" << std::endl;
+        LOG_F(ERROR, "Failed to run tshark command!");
+        return;
+    }
+
+
+    // 从管道读取数据，处理当前报文在文件中的偏移量
+    char buffer[4096]{};
+
+    // 偏移pcap全局文件头24字节
+    uint32_t file_offset = sizeof(PcapHeader);
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr && !_stop_flag) {
+        std::string line = buffer;
+        if (line.find("Capturing on") != std::string::npos) {
+            continue;
+        }
+        std::shared_ptr<Packet> packet = std::make_shared<Packet>();
+        if (!parse_line(buffer, packet)) {
+            LOG_F(ERROR, buffer);
+            assert(false);
+        }
+
+        // 计算当前报文的的偏移量, 然后记录在packet中
+        packet->file_offset = file_offset + sizeof(PacketHeader);
+        // 更新偏移游标
+        file_offset = file_offset + sizeof(PacketHeader) + packet->cap_len;
+
+        // 获取地理位置
+        packet->src_location = IP2RegionUtil::get_ip_location(packet->src_ip);
+        packet->dst_location = IP2RegionUtil::get_ip_location(packet->dst_ip);
+
+        // 将分析后的数据包插入保存起来
+        _all_packets.insert(std::make_pair(packet->frame_number, packet));
+    }
+
+    // 关闭管道
+    pclose(pipe);
+
+    // 记录当前分析的文件路径
+    _current_file_path = capture_file;
+    LOG_F(INFO, "分析完成，数据包总数：%zu", _all_packets.size());
+    std::cout << "分析完成" << std::endl;
 }
 
